@@ -1,0 +1,76 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>{% block title %}Аудит{% endblock %}</title>
+
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  {% block extra_head %}{% endblock %}
+
+
+
+</head>
+
+<body>
+ 
+  <main class="container">
+    {% block content %}{% endblock %}
+     {% if request.user.is_authenticated and show_action_bar %}
+    {% with current=request.resolver_match.url_name %}
+    <div class="action-bar">
+
+      <!-- {# Audit tugmasi: audit_form sahifasida bo‘lsa ko‘rsatmaymiz #} -->
+      {% if current != "audit_form" %}
+        <a href="{% url 'audit_form' %}"
+              class="abtn audit {% if request.resolver_match.url_name == 'audit_form' %}active{% endif %}">
+              ➕ Аудит
+        </a>      
+      {% endif %}
+
+      <!-- {# Natijalar tugmasi: audit_page sahifasida bo‘lsa o‘rniga Back chiqsin #} -->
+      {% if current != "audit_page" %}
+        <a href="{% url 'audit_page' %}"
+          class="abtn results {% if request.resolver_match.url_name == 'audit_page' %}active{% endif %}">
+          📊 Результаты
+        </a>
+      {% else %}
+        <button type="button" class="abtn" onclick="history.back()">⬅ Назад</button>
+      {% endif %}
+
+      {# Past ballar tugmasi: low_scores sahifasida bo‘lsa o‘rniga Back chiqsin #}
+      {% if current != "low_scores" %}
+        <a href="{% url 'low_scores' %}"
+          class="abtn warning {% if request.resolver_match.url_name == 'low_scores' %}active{% endif %}">
+          ⚠ Низкие баллы
+        </a>
+      {% else %}
+        <button type="button" class="abtn warning" onclick="history.back()">⬅ Назад</button>
+      {% endif %}
+
+  </div>
+  
+  {% endwith %}
+{% endif %}
+  </main>
+
+  <script src="{% static 'js/app.js' %}">
+    const overlay = document.getElementById("backOverlay");
+
+      if (overlay) {
+        overlay.addEventListener("click", () => {
+          if (window.history.length > 1) {
+            window.history.back();
+          } else {
+            window.location.href = "/";
+          }
+        });
+      }
+
+  </script>
+  {% block extra_js %}{% endblock %}
+
+</body>
+</html>
+ 

@@ -1,0 +1,394 @@
+{% extends "base.html" %}
+
+{% block title %}{{ filial_name }} - Детали аудита{% endblock %}
+
+{% block extra_head %}
+ 
+<style>
+  /* Umumiy dizayn */
+  body { font-family: Arial, sans-serif; background:#f4f6f7; padding:20px; margin: 0; }
+  h2 { text-align: center; color: #333; margin-bottom: 20px; }
+
+  /* Card va Filial ma'lumotlari */
+  .card { 
+    background:#fff; 
+    padding:16px; 
+    border-radius:12px; 
+    margin-bottom:16px; 
+    box-shadow:0 4px 12px rgba(0,0,0,.08); 
+  }
+  
+  .card-info {
+    font-size: 14px;
+    line-height: 1.6;
+    margin-bottom: 10px;
+    color: #555;
+  }
+ 
+
+
+  /* Filtrlar qismi */
+  .filters { 
+    display: flex; 
+    gap: 10px; 
+    flex-wrap: wrap; 
+    margin-bottom: 20px; 
+    background: #fff;
+    padding: 15px;
+    border-radius: 12px;
+  }
+  .filters select, .filters input[type="date"] { 
+    flex: 1 1 120px; /* Mobilda moslashuvchan kenglik */
+    padding: 10px; 
+    border-radius: 8px; 
+    border: 1px solid #ccc; 
+    font-size: 14px;
+  }
+
+
+   
+
+
+
+  .btn { 
+    padding: 10px 20px; 
+    border: none; 
+    border-radius: 8px; 
+    background: #2f7df6; 
+    color: #fff; 
+    cursor: pointer; 
+    font-weight: bold;
+    flex: 1 1 100%; /* Mobilda tugma to'liq kenglikda */
+  }
+
+  /* Jadval sig'ishi uchun qat'iy qoidalar */
+  .table-wrap { 
+    width: 100%; 
+    overflow-x: auto; 
+    -webkit-overflow-scrolling: touch; 
+  }
+ 
+
+
+  table { 
+    width: 100%; 
+    border-collapse: collapse; 
+    margin-top: 10px; 
+    min-width: 320px; /* Telefon kengligidan kichik bo'lmasligi uchun */
+  }
+  th, td { 
+    border: 1px solid #eee; 
+    padding: 8px; 
+    vertical-align: middle; 
+    font-size: 13px;
+    text-align: center;
+  }
+  th { background:#e9f2ff; color: #333; }
+  
+  /* Band nomi chapga tekislansin */
+  td:first-child, th:first-child { text-align: left; }
+
+  /* Ballar ranglari */
+  .s0 { background:#ffdddd; font-weight:700; color: #d9534f; }
+  .s1 { background:#fff3cd; font-weight:700; color: #8a6d3b; }
+  
+  /* Rasmlar */
+  .img { 
+    max-width: 70px; 
+    max-height: 90px; 
+    border: 1px solid #ddd; 
+    border-radius: 6px; 
+    object-fit: cover;
+  }
+
+/* ✅ Mobile Tweaklar (Yaxshilangan variant) */
+@media (max-width: 600px) {
+    body { padding: 10px; }
+    h2 { font-size: 1.2rem; margin-bottom: 15px; }
+    
+    .card { padding: 12px; border-radius: 8px; }
+    
+    /* 1. Filtrlarni mobilga moslash */
+    .filters { 
+        padding: 10px; 
+        gap: 8px; 
+        flex-direction: column; /* Elementlarni ustma-ust qiladi */
+    }
+    .filters select, .filters input[type="date"], .btn {
+        flex: 1 1 100%;
+        width: 100%;
+        box-sizing: border-box; /* Padding kenglikka ta'sir qilmasligi uchun */
+    }
+
+    /* 2. Jadvalni mobilga "Mixlash" */
+    table { 
+        min-width: 100% !important; /* Majburiy 100% kenglik */
+        table-layout: fixed; /* Ustunlar kengligini qat'iy nazorat qiladi */
+    }
+
+    th, td { 
+        padding: 5px 2px; 
+        font-size: 11px; /* Shriftni kichraytirish juda muhim */
+        word-wrap: break-word; /* Uzun matnlarni bo'ladi */
+    }
+
+    /* 3. Rasmni yanada ixcham qilish */
+    .img { 
+        max-width: 50px; 
+        max-height: 60px; 
+    }
+
+    /* 4. Muhim: Jadval ustunlariga foiz berish (Hammasi bo'lib 100% bo'lishi kerak) */
+    /* Misol: Agar 4 ta ustun bo'lsa */
+    th:nth-child(1), td:nth-child(1) { width: 35%; } /* Band nomi */
+    th:nth-child(2), td:nth-child(2) { width: 15%; } /* Ball */
+    th:nth-child(3), td:nth-child(3) { width: 10%; } /* Rasm */
+    th:nth-child(4), td:nth-child(4) { width: 25%; } /* Amallar */
+
+    /* 5. Gorizontal scroll bo'lmasligi uchun asosiy container */
+    .table-wrap {
+        margin: 0 -5px; /* Chetdagi paddingni kompensatsiya qilish uchun */
+        overflow-x: hidden; /* Scrollni butkul yo'qotish */
+    }
+}
+/* Sahifadagi kichik rasmlar uchun */
+.image-preview, .img { 
+    width: 60px !important;    /* Jadval ichida kichik bo'lishi shart */
+    height: 60px !important;
+    object-fit: cover;
+    cursor: zoom-in; 
+    border-radius: 6px;
+    transition: transform 0.2s; 
+    display: inline-block;
+}
+
+.image-preview:hover, .img:hover { 
+    transform: scale(1.1); 
+}
+
+/* Modal - Faqat bosilganda chiqishi uchun */
+/* Modal foni */
+.modal {
+    display: none; 
+    position: fixed;
+    z-index: 9999;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.9);
+    /* Rasmni markazda saqlash uchun flex */
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    box-sizing: border-box;
+}
+
+/* Modal ichidagi rasm (Asosiy qism) */
+.modal-content {
+    margin: auto;
+    display: block;
+    width: auto;           /* Kenglikni rasm nisbatida saqlaydi */
+    max-width: 95vw;       /* Ekran kengligining 95% idan oshmaydi */
+    max-height: 85vh;      /* Ekran balandligining 85% idan oshmaydi */
+    object-fit: contain;   /* Rasmni kesmasdan to'liq sig'diradi */
+    border: 2px solid white;
+    border-radius: 4px;
+    /* Ochilish effekti */
+    animation: zoom 0.3s;
+}
+
+@keyframes zoom {
+    from {transform: scale(0)} 
+    to {transform: scale(1)}
+}
+
+/* Yopish tugmasi */
+.close {
+    position: absolute;
+    top: 15px;
+    right: 25px;
+    color: #fff;
+    font-size: 35px;
+    font-weight: bold;
+    cursor: pointer;
+}
+.table-wrap {
+    /* Jadvalning pastidan qo'shimcha joy ochadi */
+    padding-bottom: 50px; 
+}
+
+
+
+
+/* Ballar ranglari uchun klasslar */
+.score.green { background: #02a127; color: white; font-weight: bold; }
+.score.yellow { background: #f08c00; color: white; font-weight: bold; }
+.score.red { background: #e03131; color: white; font-weight: bold; }
+
+/* Tugmalar dizayni */
+.btn-action {
+    padding: 8px 20px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: bold;
+    color: white;
+    font-size: 14px;
+}
+.btn-green { background-color: #28a745; }
+.btn-gray { background-color: #6c757d; }
+
+/* Eksport tugmalari uchun */
+.export-buttons { margin: 10px 0; display: flex; gap: 10px; justify-content: flex-start; /* Chapga tekislash */ }
+.export-buttons a {
+  
+    padding: 6px 12px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 12px;
+    color: white;
+}
+.export-buttons .excel { background: #217346; }
+.export-buttons .pdf { background: #d32f2f; }
+/* 
+.action-bar {
+    display: flex;
+    justify-content: flex-start; /* 'center' o'rniga 'flex-start' */
+    /* gap: 10px;
+    margin-top: 10px;
+    margin-bottom: 0 !important; /* Pastki tashqi bo'shliqni yo'qotish */
+    /* padding: 15px;
+    background: #fff;
+    border-radius: 12px; */
+/* }  */
+.action-bar {
+    position: fixed;         /* Sahifaga nisbatan qotirish */
+    bottom: 0;               /* Eng pastga yopishtirish */
+    left: 0;                 /* Chap tomonga yopishtirish */
+    width: 100%;             /* Panel to'liq kenglikda bo'ladi */
+    display: flex-end;
+    justify-content: flex-end; /* Tugmalarni panel ichida chapga suradi */
+    gap: 10px;
+    padding: 10px 15px;      /* Atrofidagi bo'shliq (pastki paddingni xohlasangiz 0 qiling) */
+    background: rgba(255, 255, 255, 0.95); /* Orqa fon biroz shaffof (chiroyli chiqadi) */
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.1); /* Tepaga biroz soya beradi */
+    z-index: 1000;           /* Boshqa elementlardan ustun turishi uchun */
+}
+
+/* Sahifaning asosiy kontenti tugmalar tagida qolib ketmasligi uchun */
+.container, .audit-block {
+    padding-bottom: 70px !important; 
+}
+
+ 
+@media (max-width: 480px) {
+    .action-bar {
+        justify-content: flex-start; /* Mobilda ham chapda */
+    }
+
+    .btn-action, .export-buttons a {
+        flex: 0 1 auto; /* Tugma kengligi matnga mos bo'ladi */
+        width: auto;    /* To'liq ekranni egallamaydi */
+        padding: 8px 15px;
+    }
+}
+</style>
+
+{% endblock %}
+
+{% block content %}
+
+<h1>{{ filial_name }} -Детали аудита выацфафцафцац</h1>
+
+{% if audit_data %}
+  {% for audit_info in audit_data %}
+    <div class="audit-block">
+      <h2>
+        Аудитор: {{ audit_info.audit.auditor|default:"-" }}
+      </h2>
+      <h2>ID аудита: {{ audit_info.audit.id }} | Дата: {{ audit_info.audit.created_at|date:"d-m-Y H:i" }}</h2>
+      <h3>Итоговый процент: {{ audit_info.percent }}%</h3>
+
+      <div class="export-buttons">
+        <a href="{% url 'export_audit_detail_excel' audit_info.audit.id %}" class="excel">Экспорт в Excel</a>
+        <a href="{% url 'export_audit_detail_pdf' audit_info.audit.id %}" class="pdf">Экспорт в PDF</a>
+      </div>
+ 
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Название пункта</th>
+              <th style="width: 60px;">Баллы</th>
+              <!-- <th style="width: 100px;">Изображение</th> </tr> -->
+          </thead>
+          <tbody>
+            {% for band in audit_info.bands %}
+              <tr> 
+                <td>{{ band.band_name }}</td>
+                <td class="score
+                  {% if band.score == 3 %}green
+                  {% elif band.score == 2 %}yellow
+                  {% else %}red
+                  {% endif %}">
+                  {{ band.score }}
+                </td>
+                <!-- <td>
+                  {% if band.images %}
+                    {% for image in band.images %}
+                      <img src="{{ image }}" class="image-preview" onclick="openImageModal(this.src)" />
+                    {% endfor %}
+                  {% else %}
+                    -
+                  {% endif %}
+                </td> -->
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="action-bar" style="display: flex; justify-content: center; gap: 10px; margin-top: 20px;">
+          {% if is_admin %}
+              <a href="{% url 'audit_form' %}" class="btn-action btn-green">+ Аудит</a>
+          {% endif %}
+          <a href="javascript:history.back()" class="btn-action btn-gray">← Назад</a>
+      </div>
+
+      <!-- <div id="imageModal" class="modal" onclick="closeImageModal()">
+        <span class="close">&times;</span>
+        <img class="modal-content" id="modalImage">
+      </div> -->
+    </div>
+  {% endfor %}
+{% else %}
+  <p>Для этого филиала аудиты не найдены.</p>
+{% endif %}
+
+<!-- <img src="{{ image }}" class="image-preview" onclick="openImageModal(this.src)"> -->
+<!--  rasm olib tashlandi -->
+<!-- <div id="imageModal" class="modal" onclick="closeImageModal()">
+  <span class="close">&times;</span>
+  <img class="modal-content" id="modalImage">
+</div>  --> 
+
+
+
+{% endblock %}
+
+<!-- {% block extra_js %}
+<script>
+  function openImageModal(src) {
+      const modal = document.getElementById("imageModal");
+      const modalImg = document.getElementById("modalImage");
+      
+      modal.style.display = "flex"; // "block" emas, "flex" qiling!
+      modalImg.src = src;
+  }
+
+  function closeImageModal() {
+      const modal = document.getElementById("imageModal");
+      modal.style.display = "none";
+  }
+
+</script>
+{% endblock %} -->
